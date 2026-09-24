@@ -1,0 +1,382 @@
+# ==============================================================================
+# HYPERLOCAL DELIVERY DISPATCHER - REST API TEST SUITE
+# ==============================================================================
+# Compatibility: VS Code REST Client extension (Huachao Mao) or Postman import
+#
+# INSTRUCTIONS:
+# 1. Run the backend server: `npm run dev`
+# 2. Make sure MongoDB is running on mongodb://localhost:27017
+# 3. First, execute the "Register Customer" or "Login" request.
+# 4. Once logged in, copy the `accessToken` value from the response and paste 
+#    it into the `@token` variable below, or use the dynamic variables where supported.
+# 5. Populate other variables (@productId, @orderId, @agentId) as you progress.
+# ==============================================================================
+
+@baseUrl = http://localhost:5000/api
+
+# --- Authentication & Authorization Variables ---
+# Update this token manually after logging in to test protected endpoints
+@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjZhMzJhZmQ1OTcxOWQ0YTc2MWZiNWU0ZSIsInJvbGUiOiJjdXN0b21lciIsImVtYWlsIjoiYXJqdW5AZGVsaXZlcnkuY29tIiwiaWF0IjoxNzgxNzA4MTQzLCJleHAiOjE3ODE3OTQ1NDN9.-j3n1OWiW9rAgM0afi01Bj2JRNufD3DJ-8StZupKYdI
+
+# --- Resource Variables (Update these with real MongoDB ObjectIDs from responses) ---
+@productId = 6a31847961d2012911b74c6d
+@orderId = 660f58cbf35b6a7a58bf4e99
+@agentId = 660f58dcf35b6a7a58bf4ea2
+
+### ============================================================================
+### MODULE 1: AUTHENTICATION & PROFILE
+### ============================================================================
+
+### 1. Register Customer
+# Purpose: Create a new customer account
+# Expected Response: 201 Created with success: true, accessToken, and user details
+POST http://localhost:5000/api/auth/register
+Content-Type: application/json
+
+{
+  "name": "Arjun Sharma",
+  "email": "arjun@delivery.com",
+  "phone": "9083316321",
+  "password": "customerpassword123",
+  "role": "customer"
+}
+
+### 2. Register Delivery Agent
+# Purpose: Create a new delivery agent account
+# Expected Response: 201 Created with success: true, accessToken, and auto-created agent details
+POST http://localhost:5000/api/auth/register
+Content-Type: application/json
+
+{
+  "name": "Rohan Das",
+  "email": "rohan@delivery.com",
+  "phone": "9144972049",
+  "password": "agentpassword123",
+  "role": "delivery_agent"
+}
+
+### 3. Register Administrator
+# Purpose: Create a new administrator account
+# Expected Response: 201 Created with success: true, accessToken, and admin details
+POST http://localhost:5000/api/auth/register
+Content-Type: application/json
+
+{
+  "name": "Super Admin",
+  "email": "admin2@delivery.com",
+  "phone": "9144972040",
+  "password": "adminpassword123",
+  "role": "admin"
+}
+
+### 4. Login User
+# @name login
+# Purpose: Authenticate and retrieve Access and Refresh JWT Tokens
+# Expected Response: 200 OK with success: true, accessToken, refreshToken, and user details
+POST http://localhost:5000/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "arjun@delivery.com",
+  "password": "customerpassword123"
+}
+
+### 5. Google Simulated Login
+# Purpose: Simulate sign-in / sign-up via Google OAuth SDK
+# Expected Response: 200 OK with JWT tokens and user account creation (if first-time)
+POST http://localhost:5000/api/auth/google
+Content-Type: application/json
+
+{
+  "name": "Google User",
+  "email": "googleuser@gmail.com",
+  "googleId": "google_oauth_123456789",
+  "imageUrl": "https://lh3.googleusercontent.com/a/default-user"
+}
+
+### 6. Get User Profile (Protected)
+# Purpose: Fetch current user's profile details based on JWT Token
+# Expected Response: 200 OK with user details (excluding password)
+# Authorization: Requires valid customer, agent, or admin JWT token
+GET http://localhost:5000/api/auth/profile
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjZhMzJiMDgxOTcxOWQ0YTc2MWZiNWU1OSIsInJvbGUiOiJjdXN0b21lciIsImVtYWlsIjoiZ29vZ2xldXNlckBnbWFpbC5jb20iLCJpYXQiOjE3ODE3MDY4ODEsImV4cCI6MTc4MTc5MzI4MX0.6GKZXCJDHhpV8HokptPQAKzdT-YszLERDpvB0jHGskc
+
+### 7. Add Delivery Address (Protected)
+# Purpose: Save a delivery address to the customer's address book
+# Expected Response: 201 Created with the updated list of addresses
+# Authorization: Requires valid customer/user JWT token
+POST http://localhost:5000/api/auth/address
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjZhMzJiMDgxOTcxOWQ0YTc2MWZiNWU1OSIsInJvbGUiOiJjdXN0b21lciIsImVtYWlsIjoiZ29vZ2xldXNlckBnbWFpbC5jb20iLCJpYXQiOjE3ODE3MDY4ODEsImV4cCI6MTc4MTc5MzI4MX0.6GKZXCJDHhpV8HokptPQAKzdT-YszLERDpvB0jHGskc
+Content-Type: application/json
+
+{
+  "name": "Home Address",
+  "phone": "9876543210",
+  "houseNumber": "42-B, 3rd Floor",
+  "street": "100 Feet Road, Indiranagar",
+  "city": "Bangalore",
+  "state": "Karnataka",
+  "pincode": "560038",
+  "landmark": "Near Metro Station",
+  "isDefault": true
+}
+
+### 8. Logout User (Protected)
+# Purpose: Client-side logout acknowledgment by the server
+# Expected Response: 200 OK with success: true
+# Authorization: Requires valid JWT token
+POST http://localhost:5000/api/auth/logout
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjZhMzJiMDgxOTcxOWQ0YTc2MWZiNWU1OSIsInJvbGUiOiJjdXN0b21lciIsImVtYWlsIjoiZ29vZ2xldXNlckBnbWFpbC5jb20iLCJpYXQiOjE3ODE3MDY4ODEsImV4cCI6MTc4MTc5MzI4MX0.6GKZXCJDHhpV8HokptPQAKzdT-YszLERDpvB0jHGskc
+
+
+### ============================================================================
+### MODULE 2: AI SMART SEARCH & SHOPPING ASSISTANT
+### ============================================================================
+
+### 1. Process AI Prompt (Protected)
+# Purpose: Parse natural language prompt into scaled ingredients and match with store products
+# Expected Response: 200 OK containing parsed dish name, scaled quantities, and matched database products
+# Note: If GEMINI_API_KEY is not configured in .env, this falls back to a rule-based parser automatically.
+POST http://localhost:5000/api/ai/search
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjZhMzJiMDgxOTcxOWQ0YTc2MWZiNWU1OSIsInJvbGUiOiJjdXN0b21lciIsImVtYWlsIjoiZ29vZ2xldXNlckBnbWFpbC5jb20iLCJpYXQiOjE3ODE3MDY4ODEsImV4cCI6MTc4MTc5MzI4MX0.6GKZXCJDHhpV8HokptPQAKzdT-YszLERDpvB0jHGskc
+Content-Type: application/json
+
+{
+  "prompt": "I want to make Chicken Biryani for 4 people tonight"
+}
+
+### 2. Get AI Search History (Protected)
+# Purpose: Fetch all natural language prompts run by the logged-in customer
+# Expected Response: 200 OK with list of past queries and their creation timestamps
+GET http://localhost:5000/api/ai/history
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjZhMzJiMDgxOTcxOWQ0YTc2MWZiNWU1OSIsInJvbGUiOiJjdXN0b21lciIsImVtYWlsIjoiZ29vZ2xldXNlckBnbWFpbC5jb20iLCJpYXQiOjE3ODE3MDY4ODEsImV4cCI6MTc4MTc5MzI4MX0.6GKZXCJDHhpV8HokptPQAKzdT-YszLERDpvB0jHGskc
+
+
+### ============================================================================
+### MODULE 3: PRODUCT CATALOG (CRUD)
+### ============================================================================
+
+### 1. Get All Products (Public)
+# Purpose: List, filter, or search products in the store
+# Expected Response: 200 OK with list of matching products
+# Parameters (Optional query params):
+#   - category: e.g. Groceries
+#   - search: e.g. rice
+GET http://localhost:5000/api/products
+
+### 2. Get Single Product by ID (Public)
+# Purpose: Retrieve full details of a specific product
+# Expected Response: 200 OK with product object or 404 if not found
+GET http://localhost:5000/api/products/6a31847961d2012911b74c6d
+
+### 3. Create Product (Protected - Admin Only)
+# Purpose: Insert a new product into the database catalog
+# Expected Response: 201 Created with the new product object
+# Authorization: Requires Admin JWT token
+POST http://localhost:5000/api/products
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjZhMzJiMjZhOTcxOWQ0YTc2MWZiNWU5MyIsInJvbGUiOiJhZG1pbiIsImVtYWlsIjoiYWRtaW4xQGRlbGl2ZXJ5LmNvbSIsImlhdCI6MTc4MTcwNzM3MCwiZXhwIjoxNzgxNzkzNzcwfQ.LMAfUxs7v3aWnyJKZco5uQsl-51HXoZaP3WhyHilzdM
+Content-Type: application/json
+
+{
+  "name": "Basmati Rice Premium",
+  "description": "Long grain aromatic basmati rice, perfect for biryani",
+  "category": "Groceries",
+  "price": 120.00,
+  "discount": 10,
+  "stock": 50,
+  "image": "https://images.unsplash.com/photo-1586201375761-83865001e31c",
+  "brand": "India Gate",
+  "unit": "1 Kg"
+}
+
+### 4. Update Product (Protected - Admin Only)
+# Purpose: Modify existing product attributes
+# Expected Response: 200 OK with the updated product object
+# Authorization: Requires Admin JWT token
+PUT http://localhost:5000/api/products/6a31847961d2012911b74c6d
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjZhMzJiMjZhOTcxOWQ0YTc2MWZiNWU5MyIsInJvbGUiOiJhZG1pbiIsImVtYWlsIjoiYWRtaW4xQGRlbGl2ZXJ5LmNvbSIsImlhdCI6MTc4MTcwNzM3MCwiZXhwIjoxNzgxNzkzNzcwfQ.LMAfUxs7v3aWnyJKZco5uQsl-51HXoZaP3WhyHilzdM
+
+Content-Type: application/json
+
+{
+  "price": 115.00,
+  "stock": 100
+}
+
+### 5. Delete Product (Protected - Admin Only)
+# Purpose: Remove a product from the database catalog
+# Expected Response: 200 OK with success message
+# Authorization: Requires Admin JWT token
+DELETE http://localhost:5000/api/products/6a31847961d2012911b74c6d
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjZhMzJiMjZhOTcxOWQ0YTc2MWZiNWU5MyIsInJvbGUiOiJhZG1pbiIsImVtYWlsIjoiYWRtaW4xQGRlbGl2ZXJ5LmNvbSIsImlhdCI6MTc4MTcwNzM3MCwiZXhwIjoxNzgxNzkzNzcwfQ.LMAfUxs7v3aWnyJKZco5uQsl-51HXoZaP3WhyHilzdM
+
+
+### ============================================================================
+### MODULE 4: SHOPPING CART MANAGEMENT
+### ============================================================================
+
+### 1. Get User Cart (Protected)
+# Purpose: Retrieve items and total price of current user's active shopping cart
+# Expected Response: 200 OK with the cart object (auto-creates if missing)
+GET http://localhost:5000/api/cart
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjZhMzJiMDgxOTcxOWQ0YTc2MWZiNWU1OSIsInJvbGUiOiJjdXN0b21lciIsImVtYWlsIjoiZ29vZ2xldXNlckBnbWFpbC5jb20iLCJpYXQiOjE3ODE3MDY4ODEsImV4cCI6MTc4MTc5MzI4MX0.6GKZXCJDHhpV8HokptPQAKzdT-YszLERDpvB0jHGskc
+
+### 2. Add Single Item to Cart (Protected)
+# Purpose: Add a single item or increment its quantity in the cart
+# Expected Response: 200 OK with updated cart items and recalculated total price
+POST http://localhost:5000/api/cart/add
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjZhMzJiMDgxOTcxOWQ0YTc2MWZiNWU1OSIsInJvbGUiOiJjdXN0b21lciIsImVtYWlsIjoiZ29vZ2xldXNlckBnbWFpbC5jb20iLCJpYXQiOjE3ODE3MDY4ODEsImV4cCI6MTc4MTc5MzI4MX0.6GKZXCJDHhpV8HokptPQAKzdT-YszLERDpvB0jHGskc
+Content-Type: application/json
+
+{
+  "productId": "6a31847961d2012911b74c6d",
+  "quantity": 2
+}
+
+### 3. Bulk Add Items to Cart (Protected)
+# Purpose: Bulk insert multiple items into the cart (e.g. from AI Shopping Assistant suggestions)
+# Expected Response: 200 OK with updated cart items and recalculated total price
+POST http://localhost:5000/api/cart/add
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjZhMzJiMDgxOTcxOWQ0YTc2MWZiNWU1OSIsInJvbGUiOiJjdXN0b21lciIsImVtYWlsIjoiZ29vZ2xldXNlckBnbWFpbC5jb20iLCJpYXQiOjE3ODE3MDY4ODEsImV4cCI6MTc4MTc5MzI4MX0.6GKZXCJDHhpV8HokptPQAKzdT-YszLERDpvB0jHGskc
+Content-Type: application/json
+
+{
+  "items": [
+    {
+      "productId": "6a31847961d2012911b74c6d",
+      "quantity": 1
+    }
+  ]
+}
+
+### 4. Update Cart Item Quantity (Protected)
+# Purpose: Set absolute quantity of an item in the cart
+# Expected Response: 200 OK with updated cart
+# Note: Setting quantity to 0 or negative will remove the item from the cart.
+PUT http://localhost:5000/api/cart/update
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjZhMzJiMDgxOTcxOWQ0YTc2MWZiNWU1OSIsInJvbGUiOiJjdXN0b21lciIsImVtYWlsIjoiZ29vZ2xldXNlckBnbWFpbC5jb20iLCJpYXQiOjE3ODE3MDY4ODEsImV4cCI6MTc4MTc5MzI4MX0.6GKZXCJDHhpV8HokptPQAKzdT-YszLERDpvB0jHGskc
+Content-Type: application/json
+
+{
+  "productId": "6a31847961d2012911b74c6d",
+  "quantity": 5
+}
+
+### 5. Remove Item from Cart (Protected)
+# Purpose: Delete a specific item completely from the cart
+# Expected Response: 200 OK with updated cart
+DELETE http://localhost:5000/api/cart/remove
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjZhMzJiMDgxOTcxOWQ0YTc2MWZiNWU1OSIsInJvbGUiOiJjdXN0b21lciIsImVtYWlsIjoiZ29vZ2xldXNlckBnbWFpbC5jb20iLCJpYXQiOjE3ODE3MDY4ODEsImV4cCI6MTc4MTc5MzI4MX0.6GKZXCJDHhpV8HokptPQAKzdT-YszLERDpvB0jHGskc
+Content-Type: application/json
+
+{
+  "productId": "6a31847961d2012911b74c6d"
+}
+
+
+### ============================================================================
+### MODULE 5: ORDERS & CHECKOUT
+### ============================================================================
+
+### 1. Create Order / Checkout (Protected)
+# Purpose: Place an order from active cart items, update stocks, trigger dispatcher allocation
+# Expected Response: 201 Created with order object, auto-assigns nearest agent asynchronously
+POST http://localhost:5000/api/orders/create
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjZhMzJiMDgxOTcxOWQ0YTc2MWZiNWU1OSIsInJvbGUiOiJjdXN0b21lciIsImVtYWlsIjoiZ29vZ2xldXNlckBnbWFpbC5jb20iLCJpYXQiOjE3ODE3MDY4ODEsImV4cCI6MTc4MTc5MzI4MX0.6GKZXCJDHhpV8HokptPQAKzdT-YszLERDpvB0jHGskc
+Content-Type: application/json
+
+{
+  "address": {
+    "name": "Home Address",
+    "phone": "9876543210",
+    "houseNumber": "42-B, 3rd Floor",
+    "street": "100 Feet Road, Indiranagar",
+    "city": "Bangalore",
+    "state": "Karnataka",
+    "pincode": "560038"
+  },
+  "paymentMethod": "UPI"
+}
+
+### 2. Get User Orders (Protected)
+# Purpose: Fetch orders matching current user profile scope
+# Expected Response: 200 OK with list of orders
+# Note: Customers get their orders, Agents get assigned orders, Admins get all orders
+GET {{baseUrl}}/orders
+Authorization: Bearer {{token}}
+
+### 3. Get Order Details by ID (Protected)
+# Purpose: Retrieve full status, tracking details, and items of a specific order
+# Expected Response: 200 OK with populated order object
+# Authorization: Requires Customer who placed it, assigned Agent, or Admin
+GET {{baseUrl}}/orders/{{orderId}}
+Authorization: Bearer {{token}}
+
+### 4. Cancel Order (Protected)
+# Purpose: Cancel an order (Allowed only before pick up), release agent, refund stock
+# Expected Response: 200 OK with updated order status: "Cancelled"
+PUT {{baseUrl}}/orders/cancel
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "orderId": "{{orderId}}"
+}
+
+### 5. Rate Order and Agent (Protected - Customer Only)
+# Purpose: Save customer ratings for delivery speed and application experience
+# Expected Response: 200 OK with order containing the ratings
+POST {{baseUrl}}/orders/{{orderId}}/rate
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "agentRating": 5,
+  "agentReview": "Super fast delivery and very courteous!",
+  "experienceRating": 5
+}
+
+
+### ============================================================================
+### MODULE 6: DISPATCHER ENGINE
+### ============================================================================
+
+### 1. Track Order Status & Location (Protected)
+# Purpose: Retrieve order status, agent assignments, and real-time transit location coordinates
+# Expected Response: 200 OK with status and location object
+GET {{baseUrl}}/dispatch/track/{{orderId}}
+Authorization: Bearer {{token}}
+
+### 2. Update Agent Location & Availability (Protected - Agent Only)
+# Purpose: Let the active agent report their current GPS position and toggle availability
+# Expected Response: 200 OK with updated location/status
+# Authorization: Requires Delivery Agent JWT token
+PUT {{baseUrl}}/dispatch/update-location
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "lat": 12.9785,
+  "lng": 77.6405,
+  "isAvailable": false
+}
+
+### 3. Get All Delivery Agents (Protected - Admin Only)
+# Purpose: List all registered delivery agents, their current positions, and assignment status
+# Expected Response: 200 OK with agent list
+# Authorization: Requires Admin JWT token
+GET {{baseUrl}}/dispatch/agents
+Authorization: Bearer {{token}}
+
+### 4. Manual / Force Assign Agent (Protected - Admin Only)
+# Purpose: Manually force/assign a delivery agent to an order (overriding automatic routing)
+# Expected Response: 200 OK with order and assigned agent details
+# Authorization: Requires Admin JWT token
+POST {{baseUrl}}/dispatch/assign
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "orderId": "{{orderId}}",
+  "agentId": "{{agentId}}"
+}
